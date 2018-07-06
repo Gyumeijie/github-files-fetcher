@@ -11,6 +11,15 @@ const AUTHOR = 1;
 const REPOSITORY = 2;
 const BRANCH = 4;
 
+// A utility function for expand `~`
+function tilde(pathString) {
+    if (pathString[0] === '~') {
+        return os.homedir() + pathString.substring(1);
+    } else {
+        return pathString;
+    }
+}
+
 
 // The default output directory is the current directory
 var outputDirectory = './';
@@ -18,7 +27,8 @@ var outputDirectory = './';
 var authentication = {};
 var authenticationSwitch = {};
 // Defalut configuration file
-var configFile = `${os.homedir()}/.download_github`;
+var configFile = tilde("~/.download_github");
+
 
 const args = argsParser(process.argv);
 (function tackleArgs() {
@@ -30,14 +40,9 @@ const args = argsParser(process.argv);
     }
 
     if (args.out) {
-        outputDirectory = args.out;
+        outputDirectory = tilde(args.out);
         if (outputDirectory[args.out.length-1] !== '/') {
             outputDirectory = outputDirectory + "/";
-        }
-
-        // Expand tilde
-        if (outputDirectory[0] === '~') {
-            outputDirectory = os.homedir() + outputDirectory.substring(1);
         }
     }
 
@@ -61,12 +66,9 @@ const args = argsParser(process.argv);
     }
 
     if (args.file) {
-        configFile = args.file;
-
-        if (args.file[0] === '~') {
-            configFile = os.homedir() + args.file.substring(1);
-        }
+        configFile = tilde(args.file);
     }
+
 })();
 
 function checkGithubRepoUrlvalidity(downloadUrl) {
