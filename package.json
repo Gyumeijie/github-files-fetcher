@@ -7,5 +7,12 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Gyumeijie",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "jszip": "^3.1.5",
+    "promise": "^8.0.1",
+    "save-file": "^1.2.0",
+    "shelljs": "^0.8.2"
+  }
 }
