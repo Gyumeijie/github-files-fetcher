@@ -16,6 +16,7 @@ const BRANCH = 4;
 var outputDirectory = './';
 // Default authentication setting
 var authentication = {};
+var authenticationSwitch = null;
 
 const args = argsParser(process.argv);
 (function tackleArgs() {
@@ -145,7 +146,7 @@ function iterateDirectory(dirPaths, files, requestPromises){
     axios({
         ...basicOptions,
         url: repoInfo.urlPrefix+dirPaths.pop()+repoInfo.urlPostfix,
-        ...authentication
+        ...authenticationSwitch
     }).then(function(response) {
 
         for(var i=0; i<response.data.length-1; i++){
@@ -168,7 +169,7 @@ function iterateDirectory(dirPaths, files, requestPromises){
             iterateDirectory(dirPaths, files, requestPromises);
         }
     }).catch(function(error){
-        processClientError(error);
+        processClientError(error, iterateDirectory.bind(null, dirPaths, files, requestPromises));
     });
 }
 
@@ -208,14 +209,22 @@ function saveFiles(files, requestPromises){
     });
 }
 
-function processClientError(error) {
+function processClientError(error, retryCallback) {
     if (error.response.status == "401") {
         // Unauthorized
         console.error("Bad credentials, please check your username or password(or access token)!");
-    } else if (error.response.status == "403"){
-        // API rate limit exceeded
-        console.error("API rate limit exceeded, Authenticated requests get a higher rate limit." +
-            " Check out the documentation for more details. https://developer.github.com/v3/#rate-limiting");
+    } else if (error.response.status == "403") {
+
+        if (authentication.auth) {
+            // If the default API access rate without authentication exceeds and the command line
+            // authentication is provided, then we switch to use authentication
+            authenticationSwitch = authentication;
+            retryCallback();
+        } else {
+            // API rate limit exceeded
+            console.error("API rate limit exceeded, Authenticated requests get a higher rate limit." +
+                " Check out the documentation for more details. https://developer.github.com/v3/#rate-limiting");
+        }
     } else {
         console.error(error.message);
     }
@@ -225,12 +234,12 @@ function fetchFile(path, url, files) {
     return axios({
             ...basicOptions,
             url,
-            ...authentication
+            ...authenticationSwitch
         }).then(function (file) {
             console.log("downloading ", path);
             files.push({path: path, data: file.data});
         }).catch(function(error) {
-            processClientError(error);
+            processClientError(error, fetchFile.bind(null, path, url, files));
         });
 }
 
@@ -241,7 +250,7 @@ function downloadFile(url) {
     axios({
         ...basicOptions,
         url,
-        ...authentication
+        ...authenticationSwitch
     }).then(function (file) {
         shell.mkdir('-p', outputDirectory);
         var pathForSave = extractFilenameAndDirectoryFrom(decodeURI(repoInfo.resPath));
@@ -250,7 +259,7 @@ function downloadFile(url) {
             if (err) throw err;
         })
     }).catch(function(error){
-        processClientError(error);
+        processClientError(error, downloadFile.bind(null, url));
     });
 }
 
@@ -270,7 +279,7 @@ function initializeDownload(parameters) {
              ...basicOptions,
              responseType: 'stream',
              url: repoUrl,
-             ...authentication
+             ...authenticationSwitch
         }).then(function(response){
              shell.mkdir('-p', outputDirectory);
              var filename = outputDirectory + `${repoInfo.repository}.zip`;
@@ -279,14 +288,14 @@ function initializeDownload(parameters) {
                                console.log(`${filename} downloaded.`);
                  });
         }).catch(function(error) {
-             processClientError(error);
+             processClientError(error, initializeDownload.bind(null, parameters));
         });
     } else {
         // Download part of repository
         axios({
             ...basicOptions,
             url: repoInfo.urlPrefix+repoInfo.resPath+repoInfo.urlPostfix,
-            ...authentication
+            ...authenticationSwitch
         }).then(function(response) {
             if(response.data instanceof Array){
                 downloadDirectory();
@@ -294,7 +303,7 @@ function initializeDownload(parameters) {
                 downloadFile(response.data.download_url);
             }
         }).catch(function(error) {
-            processClientError(error);
+            processClientError(error, initializeDownload.bind(null, parameters));
         });
     }
 }
