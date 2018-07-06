@@ -5,13 +5,52 @@ var axios = require('axios');
 var Promise = require('promise');
 var shell = require('shelljs');
 var save = require('save-file');
+var argsParser = require("args-parser");
 
 const AUTHOR = 1;
 const REPOSITORY = 2;
 const BRANCH = 4;
 
+
+// The default output directory is the current directory
+var outputDirectory = './';
+
+const args = argsParser(process.argv);
+(function tackleArgs() {
+    // The url is required and should be a valid github repository url
+    if (!args.url) {
+        throw new Error("input a url")
+    } else {
+        checkGithubRepoUrlvalidity(args.url);
+    }
+
+    if (args.out) {
+        outputDirectory = args.out;
+        if (outputDirectory[args.out.length-1] !== '/') {
+            outputDirectory = outputDirectory + "/";
+        }
+
+        // Expand tilde
+        if (outputDirectory[0] === '~') {
+            outputDirectory = os.homedir() + outputDirectory.substring(1);
+        }
+    }
+})();
+
+function checkGithubRepoUrlvalidity(downloadUrl) {
+       var {hostname, pathname} = url.parse(downloadUrl, true);
+
+       if (hostname !== "github.com") {
+           throw new Error("Invalid domain: github.com is expected!")
+       }
+
+       if (pathname.split('/').length < 3) {
+           throw new Error("Invalid url: https://github.com/user/repository is expected")
+       }
+}
+
 var parameters = {
-    url: "https://github.com/Gyumeijie/qemu-object-model/tree/master/qom",
+    url: args.url,
     fileName: undefined,
     rootDirectory: undefined
 };
@@ -127,14 +166,15 @@ function extractFilenameAndDirectoryFrom(path) {
 
 function saveFiles(files, requestPromises){
 
-    shell.mkdir('-p', repoInfo.rootDirectoryName);
-    var rootDir = repoInfo.rootDirectoryName;
+    var rootDir = outputDirectory + repoInfo.rootDirectoryName;
+    shell.mkdir('-p', rootDir);
+
     Promise.all(requestPromises).then(function(data) {
 
         for(let i=0; i<files.length-1; i++) {
 
             var pathForSave = extractFilenameAndDirectoryFrom(files[i].path.substring(decodeURI(repoInfo.resPath).length+1));
-            var dir = rootDir+pathForSave.directory;
+            var dir = rootDir + pathForSave.directory;
 
             fs.exists(dir, function (i,dir, pathForSave, exists) {
                 if (!exists) {
@@ -164,14 +204,17 @@ function fetchFile(path, url, files) {
 
 function downloadFile(url) {
 
+    console.log("downloading ", repoInfo.resPath);
+
     axios({
         ...basicOptions,
         url,
         ...authentication
     }).then(function (file) {
-        console.log("downloading ", repoInfo.resPath);
+        shell.mkdir('-p', outputDirectory);
         var pathForSave = extractFilenameAndDirectoryFrom(decodeURI(repoInfo.resPath));
-        save(file.data, pathForSave.filename, (err, data) => {
+
+        save(file.data, outputDirectory + pathForSave.filename, (err, data) => {
             if (err) throw err;
         })
     }).catch(function(error){
@@ -197,7 +240,8 @@ function initializeDownload(parameters) {
              url: repoUrl,
              ...authentication
         }).then(function(response){
-             var filename = `${repoInfo.repository}.zip`;
+             shell.mkdir('-p', outputDirectory);
+             var filename = outputDirectory + `${repoInfo.repository}.zip`;
              response.data.pipe(fs.createWriteStream(filename))
                  .on('close', function () {
                                console.log(`${filename} downloaded.`);
@@ -206,7 +250,6 @@ function initializeDownload(parameters) {
             console.log("error: ", error.message);
         });
     } else {
-
         // Download part of repository
         axios({
             ...basicOptions,
