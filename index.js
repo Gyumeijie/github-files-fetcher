@@ -305,7 +305,7 @@ function initializeDownload(parameters) {
              var filename = outputDirectory + `${repoInfo.repository}.zip`;
              response.data.pipe(fs.createWriteStream(filename))
                  .on('close', function () {
-                               console.log(`${filename} downloaded.`);
+                     console.log(`${filename} downloaded.`);
                  });
         }).catch(function(error) {
              processClientError(error, initializeDownload.bind(null, parameters));
