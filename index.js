@@ -14,6 +14,8 @@ const BRANCH = 4;
 
 // The default output directory is the current directory
 var outputDirectory = './';
+// Default authentication setting
+var authentication = {};
 
 const args = argsParser(process.argv);
 (function tackleArgs() {
@@ -33,6 +35,21 @@ const args = argsParser(process.argv);
         // Expand tilde
         if (outputDirectory[0] === '~') {
             outputDirectory = os.homedir() + outputDirectory.substring(1);
+        }
+    }
+
+    if (args.auth) {
+        let auth = args.auth;
+
+        let colonPos = auth.indexOf(':');
+        if ( colonPos==-1 || colonPos == auth.length-1) {
+            throw new Error("Bad auth option: username:password is expected!");
+        }
+
+        [username, password] = auth.split(':');
+        authentication.auth = {
+            username,
+            password
         }
     }
 })();
@@ -55,18 +72,20 @@ var parameters = {
     rootDirectory: undefined
 };
 
-// Default authentication setting
-var authentication = {};
 
 // Read configuration file
 const defaultConfigFile = `${os.homedir()}/.download_github`;
-(function parseConfig(){
-    var exists = fs.existsSync(defaultConfigFile);
-    if (exists) {
-       var data = fs.readFileSync(defaultConfigFile, 'utf8');
-       authentication = JSON.parse(data);
-    }
-})();
+
+// If no command line authentication provided, read the configuration file
+if (!authentication.auth) {
+    (function parseConfig(){
+        var exists = fs.existsSync(defaultConfigFile);
+        if (exists) {
+            var data = fs.readFileSync(defaultConfigFile, 'utf8');
+            authentication = JSON.parse(data);
+        }
+    })();
+}
 
 
 function parseInfo(parameters) {
