@@ -16,7 +16,9 @@ const BRANCH = 4;
 var outputDirectory = './';
 // Default authentication setting
 var authentication = {};
-var authenticationSwitch = null;
+var authenticationSwitch = {};
+// Defalut configuration file
+var configFile = `${os.homedir()}/.download_github`;
 
 const args = argsParser(process.argv);
 (function tackleArgs() {
@@ -51,13 +53,20 @@ const args = argsParser(process.argv);
         authentication.auth = {
             username,
             password
+        };
+
+        if (args.alwaysUseAuth) {
+            authenticationSwitch = authentication;
         }
     }
 
-    if (args.alwaysUseAuth) {
-        authenticationSwitch = authentication;
-    }
+    if (args.file) {
+        configFile = args.file;
 
+        if (args.file[0] === '~') {
+            configFile = os.homedir() + args.file.substring(1);
+        }
+    }
 })();
 
 function checkGithubRepoUrlvalidity(downloadUrl) {
@@ -79,16 +88,19 @@ var parameters = {
 };
 
 
-// Read configuration file
-const defaultConfigFile = `${os.homedir()}/.download_github`;
-
 // If no command line authentication provided, read the configuration file
 if (!authentication.auth) {
     (function parseConfig(){
-        var exists = fs.existsSync(defaultConfigFile);
+        var exists = fs.existsSync(configFile);
         if (exists) {
-            var data = fs.readFileSync(defaultConfigFile, 'utf8');
+            var data = fs.readFileSync(configFile, 'utf8');
             authentication = JSON.parse(data);
+
+            if (args.alwaysUseAuth) {
+                authenticationSwitch = authentication;
+            }
+        } else {
+            console.warn("No configuration file provided!");
         }
     })();
 }
