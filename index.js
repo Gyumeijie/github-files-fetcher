@@ -102,7 +102,6 @@ function parseInfo(parameters) {
         info.rootDirectoryName = parameters.rootDirectory+"/";
     }
 
-    console.log(info)
     return info;
 }
 
@@ -149,6 +148,8 @@ function iterateDirectory(dirPaths, files, requestPromises){
         } else {
             iterateDirectory(dirPaths, files, requestPromises);
         }
+    }).catch(function(error){
+        processClientError(error);
     });
 }
 
@@ -188,6 +189,18 @@ function saveFiles(files, requestPromises){
     });
 }
 
+function processClientError(error) {
+    if (error.response.status == "401") {
+        // Unauthorized
+        console.error("Bad credentials, please check your username or password(or access token)!");
+    } else if (error.response.status == "403"){
+        // API rate limit exceeded
+        console.error("API rate limit exceeded, Authenticated requests get a higher rate limit." +
+            " Check out the documentation for more details. https://developer.github.com/v3/#rate-limiting");
+    } else {
+        console.error(error.message);
+    }
+}
 function fetchFile(path, url, files) {
 
     return axios({
@@ -198,7 +211,7 @@ function fetchFile(path, url, files) {
             console.log("downloading ", path);
             files.push({path: path, data: file.data});
         }).catch(function(error) {
-            console.log("error: ", error.message);
+            processClientError(error);
         });
 }
 
@@ -218,7 +231,7 @@ function downloadFile(url) {
             if (err) throw err;
         })
     }).catch(function(error){
-        console.log(error);
+        processClientError(error);
     });
 }
 
@@ -247,7 +260,7 @@ function initializeDownload(parameters) {
                                console.log(`${filename} downloaded.`);
                  });
         }).catch(function(error) {
-            console.log("error: ", error.message);
+             processClientError(error);
         });
     } else {
         // Download part of repository
@@ -262,7 +275,7 @@ function initializeDownload(parameters) {
                 downloadFile(response.data.download_url);
             }
         }).catch(function(error) {
-            console.log(error);
+            processClientError(error);
         });
     }
 }
