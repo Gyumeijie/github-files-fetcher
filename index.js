@@ -53,6 +53,11 @@ const args = argsParser(process.argv);
             password
         }
     }
+
+    if (args.alwaysUseAuth) {
+        authenticationSwitch = authentication;
+    }
+
 })();
 
 function checkGithubRepoUrlvalidity(downloadUrl) {
@@ -218,6 +223,7 @@ function processClientError(error, retryCallback) {
         if (authentication.auth) {
             // If the default API access rate without authentication exceeds and the command line
             // authentication is provided, then we switch to use authentication
+            console.warn("The unauthorized API access rate exceeded, we are now retrying with authentication......");
             authenticationSwitch = authentication;
             retryCallback();
         } else {
