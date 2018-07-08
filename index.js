@@ -32,6 +32,30 @@ var configFile = tilde("~/.download_github");
 
 const args = argsParser(process.argv);
 (function tackleArgs() {
+
+    if (args.help) {
+        console.log(`
+          Usage: download [OPTION]... 
+          Example: download --url='https://github.com/user/repository'  --out='~/output'
+          
+          Resource URL:
+          --url=URL                     the url of resource to be downloaded
+          
+          Output:
+          --out=output_directory        the directory holds your download resource
+          
+          Authentication:
+          --auth=username:password      the password can be either you login password of github account or access token
+          --alwaysUseAuth               if set true, every request is authenticated and in this way we can have more API
+                                        access rate
+          
+          Configuration file:
+          --file=config_file            the default configuration file is the '~/download_github'
+        `);
+
+        return;
+    }
+
     // The url is required and should be a valid github repository url
     if (!args.url) {
         throw new Error("input a url")
@@ -328,4 +352,7 @@ function initializeDownload(parameters) {
     }
 }
 
-initializeDownload(parameters);
+if (!args.help) {
+    initializeDownload(parameters);
+}
+
