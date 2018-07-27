@@ -60,7 +60,7 @@ const args = argsParser(process.argv);
     if (!args.url) {
         throw new Error("input a url")
     } else {
-        checkGithubRepoUrlvalidity(args.url);
+        checkGithubRepoURLValidity(args.url);
     }
 
     if (args.out) {
@@ -95,7 +95,7 @@ const args = argsParser(process.argv);
 
 })();
 
-function checkGithubRepoUrlvalidity(downloadUrl) {
+function checkGithubRepoURLValidity(downloadUrl) {
        var {hostname, pathname} = url.parse(downloadUrl, true);
 
        if (hostname !== "github.com") {
