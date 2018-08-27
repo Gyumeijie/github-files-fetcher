@@ -192,7 +192,7 @@ function iterateDirectory(dirPaths, files, requestPromises){
         ...authenticationSwitch
     }).then(function(response) {
 
-        for(var i=0; i<response.data.length-1; i++){
+        for(var i=0; i<response.data.length; i++){
             if(response.data[i].type == "dir"){
                 dirPaths.push(response.data[i].path);
             } else {
@@ -235,7 +235,7 @@ function saveFiles(files, requestPromises){
 
     Promise.all(requestPromises).then(function(data) {
 
-        for(let i=0; i<files.length-1; i++) {
+        for(let i=0; i<files.length; i++) {
 
             var pathForSave = extractFilenameAndDirectoryFrom(files[i].path.substring(decodeURI(repoInfo.resPath).length+1));
             var dir = rootDir + pathForSave.directory;
