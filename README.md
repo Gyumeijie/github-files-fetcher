@@ -1,20 +1,20 @@
-# What is the download-from-github for?
+# What is the github-files-fetcher for?
 
-The download-from-github is mainly designed for downloading part file(s) from a github repository. This is very useful if you 
+The `github-files-fetcher` mainly designed for downloading part file(s) from a github repository. This is very useful if you 
 have a low bandwidth network and just need particular file(s) from a repository. but If you want to download the whole repository, use the `git clone` command instead.
 
-# Usage 
+# Installation 
 
-Download this repostory, run `npm install` to install dependecies. Then you can run it with `node`.
+Run `npm install -g github-files-fetcher`
 
 ## Basic usage
 
 ```bash
-node index.js --url=resource_url  --out=output_directory
+fetcher --url=resource_url  --out=output_directory
 ```
 for example
 ```bash
-node index.js --url="https://github.com/reduxjs/redux/tree/master/examples/async" --out="~/"
+fetcher --url="https://github.com/reduxjs/redux/tree/master/examples/async" --out="~/"
 ```
 
 ## Authentication
@@ -35,15 +35,15 @@ The default configuration file is `~/.download_github`, and the config file is a
 For example, you can have the `~/config.json` be the configuration file.
 ```bash
  # download a directory
- node index.js --file="~/config.json" --url="https://github.com/reduxjs/redux/tree/master/examples/async" --out="~/" 
+ fetcher --file="~/config.json" --url="https://github.com/reduxjs/redux/tree/master/examples/async" --out="~/" 
  
  # download a single file
- node index.js --file="~/config.json" --url="https://github.com/Gyumeijie/download-from-github/blob/master/index.js" --out="~/" 
+ fetcher --file="~/config.json" --url="https://github.com/Gyumeijie/github-files-fetcher/blob/master/index.js" --out="~/" 
 ```
 
-When the default unauthorized API access rate exceeded, the `download-from-github` will automatically switch to use authentication if one is provided through the three ways above. 
+When the default unauthorized API access rate exceeded, the `github-files-fetcher` will automatically switch to use authentication if one is provided through the three ways above. 
 
-Since the `download-from-github` request resource without authentication in default for performance consideration, and switch to use authentication if necessary, this causes unnecessary cost once the default unauthorized API access rate exceeded. To avoid this problem you can have the `download-from-github` always use authentication by specify `--alwaysUseAuth` option.
+Since the `github-files-fetcher` request resource without authentication in default for performance consideration, and switch to use authentication if necessary, this causes unnecessary cost once the default unauthorized API access rate exceeded. To avoid this problem you can have the `github-files-fetcher` always use authentication by specify `--alwaysUseAuth` option.
 
 # Other resources
 There are some other good tools that can do the same thing for you:
