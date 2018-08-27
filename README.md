@@ -44,3 +44,10 @@ For example, you can have the `~/config.json` be the configuration file.
 When the default unauthorized API access rate exceeded, the `download-from-github` will automatically switch to use authentication if one is provided through the three ways above. 
 
 Since the `download-from-github` request resource without authentication in default for performance consideration, and switch to use authentication if necessary, this causes unnecessary cost once the default unauthorized API access rate exceeded. To avoid this problem you can have the `download-from-github` always use authentication by specify `--alwaysUseAuth` option.
+
+# Other resources
+There are some other good tools that can do the same thing for you:
+- GitZip (Credits to Kino, Browser Extensions)
+    - [Firefox Addon](https://addons.mozilla.org/en-US/firefox/addon/gitzip/)
+    - [Chrome Extension](https://chrome.google.com/webstore/detail/gitzip-for-github/ffabmkklhbepgcgfonabamgnfafbdlkn)
+- [DownGit](https://minhaskamal.github.io/DownGit/#/home) (Credits to Minhas Kamal, Web Page)
