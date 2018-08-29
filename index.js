@@ -22,7 +22,7 @@ function tilde(pathString) {
 }
 
 // The default output directory is the current directory
-let outputDirectory = './';
+let outputDirectory = `${process.cwd()}/`;
 // Default authentication setting
 let authentication = {};
 let authenticationSwitch = {};
