@@ -2,6 +2,15 @@
   "name": "github-files-fetcher",
   "version": "1.0.4",
   "description": "download files from github repository",
+  "keywords": [
+    "github",
+    "repo",
+    "repository",
+    "download",
+    "fetch",
+    "fetcher",
+    "files"
+  ],
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
