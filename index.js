@@ -4,9 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const url = require('url');
 const axios = require('axios');
-const Promise = require('promise');
 const shell = require('shelljs');
-const save = require('save-file');
 const argsParser = require('args-parser');
 
 const AUTHOR = 1;
@@ -163,43 +161,12 @@ function parseInfo(repoInfo) {
   return info;
 }
 
-function extractFilenameAndDirectoryFrom(path) {
-  const components = path.split('/');
-  const filename = components[components.length - 1];
-  const directory = path.substring(0, path.length - filename.length);
-
-  return {
-    filename,
-    directory,
-  };
-}
-
 const basicOptions = {
   method: 'get',
   responseType: 'arrayBuffer',
 };
 // Global variable
 let repoInfo = {};
-
-function saveFiles(files, requestPromises) {
-  const rootDir = outputDirectory + repoInfo.rootDirectoryName;
-  shell.mkdir('-p', rootDir);
-
-  Promise.all(requestPromises).then(() => {
-    for (let i = 0; i < files.length; i++) {
-      const pathForSave = extractFilenameAndDirectoryFrom(files[i].path.substring(decodeURI(repoInfo.resPath).length + 1));
-      const dir = rootDir + pathForSave.directory;
-      fs.exists(dir, ((i, dir, pathForSave, exists) => {
-        if (!exists) {
-          shell.mkdir('-p', dir);
-        }
-        save(files[i].data, dir + pathForSave.filename, (err) => {
-          if (err) throw err;
-        });
-      }).bind(null, i, dir, pathForSave));
-    }
-  });
-}
 
 function processClientError(error, retryCallback) {
   if (error.response.status === '401') {
@@ -222,39 +189,61 @@ function processClientError(error, retryCallback) {
   }
 }
 
-function fetchFile(path, url, files) {
-  return axios({
-    ...basicOptions,
-    url,
-    ...authenticationSwitch,
-  }).then((file) => {
-    console.log('downloading ', path);
-    files.push({ path, data: file.data });
-  }).catch((error) => {
-    processClientError(error, fetchFile.bind(null, path, url, files));
-  });
+function extractFilenameAndDirectoryFrom(path) {
+  const components = path.split('/');
+  const filename = components[components.length - 1];
+  const directory = path.substring(0, path.length - filename.length);
+
+  return {
+    filename,
+    directory,
+  };
 }
 
-function downloadFile(url) {
-  console.log('downloading ', repoInfo.resPath);
+/*
+* @example
+* take fether --url='https://github.com/reduxjs/redux/tree/master/examples/async' for example:
+* all paths of files under the 'async' directory are prefixed with the so-called 'resPath', which
+* equals to 'example/async', and the 'rootDirectoryName' is 'async'. The 'resPath' could be very long,
+* and we don't need that deep path locally in fact. So we just remove the 'resPath' from the path of a file.
+*/
+function removeResPathFrom(path) {
+  return path.substring(decodeURI(repoInfo.resPath).length + 1);
+}
 
+function constructLocalPathname(repoPath) {
+  const partialPath = extractFilenameAndDirectoryFrom(removeResPathFrom(repoPath));
+  const localRootDirectory = outputDirectory + repoInfo.rootDirectoryName;
+  const localDirectory = localRootDirectory + partialPath.directory;
+
+  return {
+    filename: partialPath.filename,
+    directory: localDirectory,
+  };
+}
+
+function downloadFile(url, pathname) {
   axios({
     ...basicOptions,
+    responseType: 'stream',
     url,
     ...authenticationSwitch,
-  }).then((file) => {
-    shell.mkdir('-p', outputDirectory);
-    const pathForSave = extractFilenameAndDirectoryFrom(decodeURI(repoInfo.resPath));
+  }).then((response) => {
+    if (!fs.existsSync(pathname.directory)) {
+      shell.mkdir('-p', pathname.directory);
+    }
 
-    save(file.data, outputDirectory + pathForSave.filename, (err) => {
-      if (err) throw err;
-    });
+    const localPathname = pathname.directory + pathname.filename;
+    response.data.pipe(fs.createWriteStream(localPathname))
+      .on('close', () => {
+        console.log(`${localPathname} downloaded.`);
+      });
   }).catch((error) => {
-    processClientError(error, downloadFile.bind(null, url));
+    processClientError(error, downloadFile.bind(null, url, pathname));
   });
 }
 
-function iterateDirectory(dirPaths, files, requestPromises) {
+function iterateDirectory(dirPaths) {
   axios({
     ...basicOptions,
     url: repoInfo.urlPrefix + dirPaths.pop() + repoInfo.urlPostfix,
@@ -265,59 +254,38 @@ function iterateDirectory(dirPaths, files, requestPromises) {
       if (data[i].type === 'dir') {
         dirPaths.push(data[i].path);
       } else if (data[i].download_url) {
-        const promise = fetchFile(data[i].path, data[i].download_url, files);
-        requestPromises.push(promise);
+        const pathname = constructLocalPathname(data[i].path);
+        downloadFile(data[i].download_url, pathname);
       } else {
         console.log(data[i]);
       }
     }
 
-    // Save files after we iterate all the directories
-    if (dirPaths.length === 0) {
-      saveFiles(files, requestPromises);
-    } else {
-      iterateDirectory(dirPaths, files, requestPromises);
+    if (dirPaths.length !== 0) {
+      iterateDirectory(dirPaths);
     }
   }).catch((error) => {
-    processClientError(error, iterateDirectory.bind(null, dirPaths, files, requestPromises));
+    processClientError(error, iterateDirectory.bind(null, dirPaths));
   });
 }
 
 function downloadDirectory() {
   const dirPaths = [];
-  const files = [];
-  const requestPromises = [];
-
   dirPaths.push(repoInfo.resPath);
-  iterateDirectory(dirPaths, files, requestPromises);
+  iterateDirectory(dirPaths);
 }
 
-function initializeDownload(para) {
-  repoInfo = parseInfo(para);
+function initializeDownload(paras) {
+  repoInfo = parseInfo(paras);
 
   if (!repoInfo.resPath || repoInfo.resPath === '') {
     if (!repoInfo.branch || repoInfo.branch === '') {
       repoInfo.branch = 'master';
     }
 
-    // Download the whole repository
+    // Download the whole repository as a zip file
     const repoURL = `https://github.com/${repoInfo.author}/${repoInfo.repository}/archive/${repoInfo.branch}.zip`;
-
-    axios({
-      ...basicOptions,
-      responseType: 'stream',
-      url: repoURL,
-      ...authenticationSwitch,
-    }).then((response) => {
-      shell.mkdir('-p', outputDirectory);
-      const filename = `${outputDirectory}${repoInfo.repository}.zip`;
-      response.data.pipe(fs.createWriteStream(filename))
-        .on('close', () => {
-          console.log(`${filename} downloaded.`);
-        });
-    }).catch((error) => {
-      processClientError(error, initializeDownload.bind(null, parameters));
-    });
+    downloadFile(repoURL, { directory: outputDirectory, filename: `${repoInfo.repository}.zip` });
   } else {
     // Download part(s) of repository
     axios({
@@ -328,10 +296,11 @@ function initializeDownload(para) {
       if (response.data instanceof Array) {
         downloadDirectory();
       } else {
-        downloadFile(response.data.download_url);
+        const partialPath = extractFilenameAndDirectoryFrom(decodeURI(repoInfo.resPath));
+        downloadFile(response.data.download_url, { ...partialPath, directory: outputDirectory });
       }
     }).catch((error) => {
-      processClientError(error, initializeDownload.bind(null, parameters));
+      processClientError(error, initializeDownload.bind(null, paras));
     });
   }
 }
