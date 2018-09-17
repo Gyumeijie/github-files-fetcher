@@ -19,8 +19,6 @@ const fileStats = {
   currentTotal: 0,
   done: false,
 };
-console.log('');
-progressBar.start(1, fileStats.downloaded, { status: 'downloading...' });
 
 // A utility function for expand `~`
 function tilde(pathString) {
@@ -51,8 +49,9 @@ function checkGithubRepoURLValidity(downloadUrl) {
 }
 
 const args = argsParser(process.argv);
+const doseJustPrintHelpInfo = args.help || (Object.keys(args).length === 0);
 (function tackleArgs() {
-  if (args.help) {
+  if (doseJustPrintHelpInfo) {
     console.log(`
           Usage: download [OPTION]... 
           Example: download --url='https://github.com/user/repository'  --out='~/output'
@@ -130,14 +129,12 @@ if (!authentication.auth) {
       if (args.alwaysUseAuth) {
         authenticationSwitch = authentication;
       }
-    } else {
-      console.warn('No configuration file provided!');
     }
   }());
 }
 
 function preprocessURL(repoURL) {
-  // We just simply fix issue#2(https://github.com/Gyumeijie/github-files-fetcher/issues/2) 
+  // We just simply fix issue#2(https://github.com/Gyumeijie/github-files-fetcher/issues/2)
   // not to guarantee the validity of the url of the repository
   const len = repoURL.length;
   if (repoURL[len - 1] === '/') {
@@ -346,6 +343,10 @@ function initializeDownload(paras) {
   }
 }
 
-if (!args.help) {
+if (!doseJustPrintHelpInfo) {
+  // Initailize progress bar
+  console.log('');
+  progressBar.start(1, fileStats.downloaded, { status: 'downloading...' });
+
   initializeDownload(parameters);
 }
