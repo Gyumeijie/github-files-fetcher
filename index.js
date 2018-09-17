@@ -48,69 +48,80 @@ function checkGithubRepoURLValidity(downloadUrl) {
   }
 }
 
+function printHelpInformation() {
+  console.log(`
+  Usage: download [OPTION]... 
+  Example: download --url='https://github.com/user/repository'  --out='~/output'
+  
+  Resource URL:
+  --url=URL                     the url of resource to be downloaded
+  
+  Output:
+  --out=output_directory        the directory holds your download resource
+  
+  Authentication:
+  --auth=username:password      the password can be either you login password of github account or access token
+  --alwaysUseAuth               if set true, every request is authenticated and in this way we can have more API
+                                access rate
+  
+  Configuration file:
+  --file=config_file            the default configuration file is the '~/download_github'
+`);
+}
+
 const args = argsParser(process.argv);
-const doseJustPrintHelpInfo = args.help || (Object.keys(args).length === 0);
-(function tackleArgs() {
-  if (doseJustPrintHelpInfo) {
-    console.log(`
-          Usage: download [OPTION]... 
-          Example: download --url='https://github.com/user/repository'  --out='~/output'
-          
-          Resource URL:
-          --url=URL                     the url of resource to be downloaded
-          
-          Output:
-          --out=output_directory        the directory holds your download resource
-          
-          Authentication:
-          --auth=username:password      the password can be either you login password of github account or access token
-          --alwaysUseAuth               if set true, every request is authenticated and in this way we can have more API
-                                        access rate
-          
-          Configuration file:
-          --file=config_file            the default configuration file is the '~/download_github'
-        `);
-
-    return;
-  }
-
-  // The url is required and should be a valid github repository url
-  if (!args.url) {
-    throw new Error('input a url');
-  } else {
-    checkGithubRepoURLValidity(args.url);
-  }
-
-  if (args.out) {
-    outputDirectory = tilde(args.out);
-    if (outputDirectory[args.out.length - 1] !== '/') {
-      outputDirectory = `${outputDirectory}/`;
-    }
-  }
-
-  if (args.auth) {
-    const { auth } = args;
-
-    const colonPos = auth.indexOf(':');
-    if (colonPos === -1 || colonPos === auth.length - 1) {
-      throw new Error('Bad auth option: username:password is expected!');
+let doseJustPrintHelpInfo = args.help || (Object.keys(args).length === 0);
+try {
+  (function tackleArgs() {
+    if (doseJustPrintHelpInfo) {
+      printHelpInformation();
+      return;
     }
 
-    const [username, password] = auth.split(':');
-    authentication.auth = {
-      username,
-      password,
-    };
-
-    if (args.alwaysUseAuth) {
-      authenticationSwitch = authentication;
+    // The url is required and should be a valid github repository url
+    if (!args.url) {
+      throw new Error('  Bad option: a URL is needed!');
+    } else {
+      checkGithubRepoURLValidity(args.url);
     }
-  }
 
-  if (args.file) {
-    configFile = tilde(args.file);
-  }
-}());
+    if (args.out) {
+      outputDirectory = tilde(args.out);
+      if (outputDirectory[args.out.length - 1] !== '/') {
+        outputDirectory = `${outputDirectory}/`;
+      }
+    }
+
+    if (args.auth) {
+      const { auth } = args;
+
+      const colonPos = auth.indexOf(':');
+      if (colonPos === -1 || colonPos === auth.length - 1) {
+        throw new Error('Bad auth option: username:password is expected!');
+      }
+
+      const [username, password] = auth.split(':');
+      authentication.auth = {
+        username,
+        password,
+      };
+
+      if (args.alwaysUseAuth) {
+        authenticationSwitch = authentication;
+      }
+    }
+
+    if (args.file) {
+      configFile = tilde(args.file);
+    }
+  }());
+} catch (error) {
+  console.log(error.message);
+  printHelpInformation();
+  // No more action, just quit after printing help information
+  doseJustPrintHelpInfo = true;
+}
+
 
 const parameters = {
   url: args.url,
