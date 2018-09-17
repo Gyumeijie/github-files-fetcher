@@ -200,10 +200,12 @@ const basicOptions = {
 let repoInfo = {};
 
 function processClientError(error, retryCallback) {
-  if (error.response.status === '401') {
+  console.log('\n');
+
+  if (error.response.status === 401) {
     // Unauthorized
     console.error('Bad credentials, please check your username or password(or access token)!');
-  } else if (error.response.status === '403') {
+  } else if (error.response.status === 403) {
     if (authentication.auth) {
       // If the default API access rate without authentication exceeds and the command line
       // authentication is provided, then we switch to use authentication
@@ -216,8 +218,14 @@ function processClientError(error, retryCallback) {
                   + ' Check out the documentation for more details. https://developer.github.com/v3/#rate-limiting');
     }
   } else {
-    console.error(error.message);
+    let errMsg = error.message;
+    if (error.response.status === 404) {
+      errMsg += ', please check the repo URL!';
+    }
+    console.error(errMsg);
   }
+
+  progressBar.stop();
 }
 
 function extractFilenameAndDirectoryFrom(path) {
