@@ -6,10 +6,21 @@ const url = require('url');
 const axios = require('axios');
 const shell = require('shelljs');
 const argsParser = require('args-parser');
+const progress = require('./lib/progress');
 
 const AUTHOR = 1;
 const REPOSITORY = 2;
 const BRANCH = 4;
+
+// Progress managment
+const progressBar = progress.bar;
+const fileStats = {
+  downloaded: 0,
+  currentTotal: 0,
+  done: false,
+};
+console.log('');
+progressBar.start(1, fileStats.downloaded, { status: 'downloading...' });
 
 // A utility function for expand `~`
 function tilde(pathString) {
@@ -248,7 +259,16 @@ function downloadFile(url, pathname) {
     const localPathname = pathname.directory + pathname.filename;
     response.data.pipe(fs.createWriteStream(localPathname))
       .on('close', () => {
-        console.log(`${localPathname} downloaded.`);
+        fileStats.downloaded++;
+        // Avoid falsy 100% progress, it is a sheer trick of presentation, not the logic
+        if (fileStats.downloaded < fileStats.currentTotal) {
+          progressBar.update(fileStats.downloaded, { status: 'downloading...' });
+        }
+
+        if (fileStats.downloaded === fileStats.currentTotal && fileStats.done) {
+          progressBar.update(fileStats.downloaded, { status: 'downloaded' });
+          progressBar.stop();
+        }
       });
   }).catch((error) => {
     processClientError(error, downloadFile.bind(null, url, pathname));
@@ -268,6 +288,9 @@ function iterateDirectory(dirPaths) {
       } else if (data[i].download_url) {
         const pathname = constructLocalPathname(data[i].path);
         downloadFile(data[i].download_url, pathname);
+
+        fileStats.currentTotal++;
+        progressBar.start(fileStats.currentTotal, fileStats.downloaded, { status: 'downloading...' });
       } else {
         console.log(data[i]);
       }
@@ -275,6 +298,8 @@ function iterateDirectory(dirPaths) {
 
     if (dirPaths.length !== 0) {
       iterateDirectory(dirPaths);
+    } else {
+      fileStats.done = true;
     }
   }).catch((error) => {
     processClientError(error, iterateDirectory.bind(null, dirPaths));
@@ -298,6 +323,8 @@ function initializeDownload(paras) {
     // Download the whole repository as a zip file
     const repoURL = `https://github.com/${repoInfo.author}/${repoInfo.repository}/archive/${repoInfo.branch}.zip`;
     downloadFile(repoURL, { directory: outputDirectory, filename: `${repoInfo.repository}.zip` });
+    fileStats.done = true;
+    fileStats.currentTotal = 1;
   } else {
     // Download part(s) of repository
     axios({
@@ -310,6 +337,8 @@ function initializeDownload(paras) {
       } else {
         const partialPath = extractFilenameAndDirectoryFrom(decodeURI(repoInfo.resPath));
         downloadFile(response.data.download_url, { ...partialPath, directory: outputDirectory });
+        fileStats.done = true;
+        fileStats.currentTotal = 1;
       }
     }).catch((error) => {
       processClientError(error, initializeDownload.bind(null, paras));
