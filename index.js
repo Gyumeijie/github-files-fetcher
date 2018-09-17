@@ -125,8 +125,20 @@ if (!authentication.auth) {
   }());
 }
 
+function preprocessURL(repoURL) {
+  // We just simply fix issue#2(https://github.com/Gyumeijie/github-files-fetcher/issues/2) 
+  // not to guarantee the validity of the url of the repository
+  const len = repoURL.length;
+  if (repoURL[len - 1] === '/') {
+    return repoURL.slice(0, len - 1);
+  }
+
+  return repoURL;
+}
+
 function parseInfo(repoInfo) {
-  const repoPath = url.parse(repoInfo.url, true).pathname;
+  const repoURL = preprocessURL(repoInfo.url);
+  const repoPath = url.parse(repoURL, true).pathname;
   const splitPath = repoPath.split('/');
   const info = {};
 
