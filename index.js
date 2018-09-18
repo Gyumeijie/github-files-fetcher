@@ -31,7 +31,7 @@ function tilde(pathString) {
 // The default output directory is the current directory
 let outputDirectory = `${process.cwd()}/`;
 // Default authentication setting
-let authentication = {};
+const authentication = {};
 let authenticationSwitch = {};
 let doesUseAuth = false;
 // Defalut configuration file
@@ -137,9 +137,10 @@ if (!authentication.auth) {
     const isExistent = fs.existsSync(configFile);
     if (isExistent) {
       const data = fs.readFileSync(configFile, 'utf8');
-      authentication = JSON.parse(data);
+      const config = JSON.parse(data);
+      authentication.auth = config.auth;
 
-      if (args.alwaysUseAuth) {
+      if (args.alwaysUseAuth || config.alwaysUseAuth) {
         authenticationSwitch = authentication;
         doesUseAuth = true;
       }
