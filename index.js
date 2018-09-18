@@ -30,6 +30,8 @@ function tilde(pathString) {
 
 // The default output directory is the current directory
 let outputDirectory = `${process.cwd()}/`;
+let localRootDirectory = '';
+let currentDownloadingFile = '';
 // Default authentication setting
 const authentication = {};
 let authenticationSwitch = {};
@@ -257,7 +259,7 @@ function removeResPathFrom(path) {
 
 function constructLocalPathname(repoPath) {
   const partialPath = extractFilenameAndDirectoryFrom(removeResPathFrom(repoPath));
-  const localRootDirectory = outputDirectory + repoInfo.rootDirectoryName;
+  localRootDirectory = outputDirectory + repoInfo.rootDirectoryName;
   const localDirectory = localRootDirectory + partialPath.directory;
 
   return {
@@ -283,11 +285,17 @@ function downloadFile(url, pathname) {
         fileStats.downloaded++;
         // Avoid falsy 100% progress, it is a sheer trick of presentation, not the logic
         if (fileStats.downloaded < fileStats.currentTotal) {
-          progressBar.update(fileStats.downloaded, { status: 'downloading...', doesUseAuth });
+          progressBar.update(fileStats.downloaded, {
+            status: 'downloading...',
+            doesUseAuth,
+          });
         }
 
         if (fileStats.downloaded === fileStats.currentTotal && fileStats.done) {
-          progressBar.update(fileStats.downloaded, { status: 'downloaded', doesUseAuth });
+          progressBar.update(fileStats.downloaded, {
+            status: 'downloaded',
+            doesUseAuth,
+          });
           progressBar.stop();
         }
       });
@@ -309,9 +317,13 @@ function iterateDirectory(dirPaths) {
       } else if (data[i].download_url) {
         const pathname = constructLocalPathname(data[i].path);
         downloadFile(data[i].download_url, pathname);
+        currentDownloadingFile = pathname.filename;
 
         fileStats.currentTotal++;
-        progressBar.start(fileStats.currentTotal, fileStats.downloaded, { status: 'downloading...', doesUseAuth });
+        progressBar.start(fileStats.currentTotal, fileStats.downloaded, {
+          status: 'downloading...',
+          doesUseAuth,
+        });
       } else {
         console.log(data[i]);
       }
@@ -344,6 +356,7 @@ function initializeDownload(paras) {
     // Download the whole repository as a zip file
     const repoURL = `https://github.com/${repoInfo.author}/${repoInfo.repository}/archive/${repoInfo.branch}.zip`;
     downloadFile(repoURL, { directory: outputDirectory, filename: `${repoInfo.repository}.zip` });
+    currentDownloadingFile = `${repoInfo.repository}.zip`;
     fileStats.done = true;
     fileStats.currentTotal = 1;
   } else {
@@ -358,6 +371,7 @@ function initializeDownload(paras) {
       } else {
         const partialPath = extractFilenameAndDirectoryFrom(decodeURI(repoInfo.resPath));
         downloadFile(response.data.download_url, { ...partialPath, directory: outputDirectory });
+        currentDownloadingFile = partialPath.filename;
         fileStats.done = true;
         fileStats.currentTotal = 1;
       }
@@ -367,10 +381,26 @@ function initializeDownload(paras) {
   }
 }
 
+// Enable to detect CTRL+C
+process.on('SIGINT', () => {
+  if (localRootDirectory !== '') {
+    shell.rm('-rf', localRootDirectory);
+  } else {
+    shell.rm('-f', localRootDirectory + currentDownloadingFile);
+  }
+  // Recover cursor
+  progressBar.stop();
+
+  process.exit();
+});
+
 if (!doseJustPrintHelpInfo) {
   // Initailize progress bar
   console.log('');
-  progressBar.start(1, fileStats.downloaded, { status: 'downloading...', doesUseAuth });
+  progressBar.start(1, fileStats.downloaded, {
+    status: 'downloading...',
+    doesUseAuth,
+  });
 
   initializeDownload(parameters);
 }
