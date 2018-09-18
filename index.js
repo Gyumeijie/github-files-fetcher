@@ -33,6 +33,7 @@ let outputDirectory = `${process.cwd()}/`;
 // Default authentication setting
 let authentication = {};
 let authenticationSwitch = {};
+let doesUseAuth = false;
 // Defalut configuration file
 let configFile = tilde('~/.download_github');
 
@@ -108,6 +109,7 @@ try {
 
       if (args.alwaysUseAuth) {
         authenticationSwitch = authentication;
+        doesUseAuth = true;
       }
     }
 
@@ -139,6 +141,7 @@ if (!authentication.auth) {
 
       if (args.alwaysUseAuth) {
         authenticationSwitch = authentication;
+        doesUseAuth = true;
       }
     }
   }());
@@ -211,6 +214,7 @@ function processClientError(error, retryCallback) {
       // authentication is provided, then we switch to use authentication
       console.warn('The unauthorized API access rate exceeded, we are now retrying with authentication......');
       authenticationSwitch = authentication;
+      doesUseAuth = true;
       retryCallback();
     } else {
       // API rate limit exceeded
@@ -278,11 +282,11 @@ function downloadFile(url, pathname) {
         fileStats.downloaded++;
         // Avoid falsy 100% progress, it is a sheer trick of presentation, not the logic
         if (fileStats.downloaded < fileStats.currentTotal) {
-          progressBar.update(fileStats.downloaded, { status: 'downloading...' });
+          progressBar.update(fileStats.downloaded, { status: 'downloading...', doesUseAuth });
         }
 
         if (fileStats.downloaded === fileStats.currentTotal && fileStats.done) {
-          progressBar.update(fileStats.downloaded, { status: 'downloaded' });
+          progressBar.update(fileStats.downloaded, { status: 'downloaded', doesUseAuth });
           progressBar.stop();
         }
       });
@@ -306,7 +310,7 @@ function iterateDirectory(dirPaths) {
         downloadFile(data[i].download_url, pathname);
 
         fileStats.currentTotal++;
-        progressBar.start(fileStats.currentTotal, fileStats.downloaded, { status: 'downloading...' });
+        progressBar.start(fileStats.currentTotal, fileStats.downloaded, { status: 'downloading...', doesUseAuth });
       } else {
         console.log(data[i]);
       }
@@ -365,7 +369,7 @@ function initializeDownload(paras) {
 if (!doseJustPrintHelpInfo) {
   // Initailize progress bar
   console.log('');
-  progressBar.start(1, fileStats.downloaded, { status: 'downloading...' });
+  progressBar.start(1, fileStats.downloaded, { status: 'downloading...', doesUseAuth });
 
   initializeDownload(parameters);
 }
