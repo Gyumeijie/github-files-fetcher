@@ -39,6 +39,17 @@ For example, you can have the `~/config.json` be the configuration file.
  # download a single file
  fetcher --file="~/config.json" --url="https://github.com/Gyumeijie/github-files-fetcher/blob/master/index.js" --out="~/" 
 ```
+The following is the **template** of the configuration file:
+
+```json
+{
+   "auth": {
+        "username" : "your_github_name",
+        "password" : "password_or_api_access_token"
+   },
+   "alwaysUseAuth" : true
+}
+```
 
 When the default unauthorized API access rate exceeded, the `github-files-fetcher` will automatically switch to use authentication if one is provided through the three ways above. 
 
