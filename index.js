@@ -208,6 +208,17 @@ let repoInfo = {};
 function processClientError(error, retryCallback) {
   console.log('\n');
 
+  // WARNING: never trust the returned data
+  if (error.response === undefined) {
+    console.error(`
+      No internet, try:\n
+      - Checking the network cables, modem, and router
+      - Reconnecting to Wi-Fi`);
+
+    progressBar.stop();
+    process.exit();
+  }
+
   if (error.response.status === 401) {
     // Unauthorized
     console.error('Bad credentials, please check your username or password(or access token)!');
