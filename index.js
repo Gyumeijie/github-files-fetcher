@@ -279,6 +279,7 @@ function constructLocalPathname(repoPath) {
   };
 }
 
+const pathCache = [];
 function downloadFile(url, pathname) {
   axios({
     ...basicOptions,
@@ -286,8 +287,9 @@ function downloadFile(url, pathname) {
     url,
     ...authenticationSwitch,
   }).then((response) => {
-    if (!fs.existsSync(pathname.directory)) {
+    if (pathCache.indexOf(pathname.directory) === -1) {
       shell.mkdir('-p', pathname.directory);
+      pathCache.push(pathname.directory);
     }
 
     const localPathname = pathname.directory + pathname.filename;
