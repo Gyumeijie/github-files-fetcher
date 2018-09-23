@@ -1,6 +1,6 @@
-# What is the github-files-fetcher for?
+# Why?
 
-The `github-files-fetcher` is mainly designed for downloading part file(s) from a github repository. This is very useful if you  have a low bandwidth network and/or just need particular file(s) from a repository. But if you want to download the whole repository, the `git clone` command is preferred.
+The `github-files-fetcher` is mainly designed for downloading part file(s) from a github repository. This is very useful if you  have a low bandwidth network and/or just need particular file(s) or subdirectory from a large repository. While you want to download the whole repository, the `git clone` command is preferred.
 
 # Installation 
 
