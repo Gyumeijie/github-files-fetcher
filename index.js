@@ -18,6 +18,7 @@ const fileStats = {
   downloaded: 0,
   currentTotal: 0,
   done: false,
+  doesDownloadDirectory: false,
 };
 
 // A utility function for expand `~`
@@ -201,9 +202,21 @@ function parseInfo(repoInfo) {
 const basicOptions = {
   method: 'get',
   responseType: 'arrayBuffer',
+  // `timeout` specifies the number of milliseconds before the request times out.
+  // If the request takes longer than `timeout`, the request will be aborted.
+  timeout: 6000,
 };
 // Global variable
 let repoInfo = {};
+
+function cleanUpOutputDirectory() {
+  if (fileStats.doesDownloadDirectory) {
+    shell.rm('-rf', localRootDirectory);
+  } else {
+    // Mainly for remove .zip file, when download a whole repo
+    shell.rm('-f', localRootDirectory + currentDownloadingFile);
+  }
+}
 
 function processClientError(error, retryCallback) {
   // Due to the cli-process, all console output before `stop` will be cleared,
@@ -216,7 +229,9 @@ function processClientError(error, retryCallback) {
       No internet, try:\n
       - Checking the network cables, modem, and router
       - Reconnecting to Wi-Fi`);
-    return;
+    if (localRootDirectory !== '') cleanUpOutputDirectory();
+    // Must use exit here not return
+    process.exit();
   }
 
   if (error.response.status === 401) {
@@ -226,7 +241,7 @@ function processClientError(error, retryCallback) {
     if (authentication.auth) {
       // If the default API access rate without authentication exceeds and the command line
       // authentication is provided, then we switch to use authentication
-      console.warn('\nThe unauthorized API access rate exceeded, we are now retrying with authentication......');
+      console.warn('\nThe unauthorized API access rate exceeded, we are now retrying with authentication......\n');
       authenticationSwitch = authentication;
       doesUseAuth = true;
       retryCallback();
@@ -234,6 +249,9 @@ function processClientError(error, retryCallback) {
       // API rate limit exceeded
       console.error('\nAPI rate limit exceeded, Authenticated requests get a higher rate limit.'
                   + ' Check out the documentation for more details. https://developer.github.com/v3/#rate-limiting');
+
+      // If there already has part of files downloaded, then clean up the output directory
+      if (localRootDirectory !== '') cleanUpOutputDirectory();
     }
   } else {
     let errMsg = `\n${error.message}`;
@@ -242,6 +260,9 @@ function processClientError(error, retryCallback) {
     }
     console.error(errMsg);
   }
+
+  // Must use exit here not return
+  process.exit();
 }
 
 function extractFilenameAndDirectoryFrom(path) {
@@ -328,7 +349,6 @@ function iterateDirectory(dirPaths) {
       } else if (data[i].download_url) {
         const pathname = constructLocalPathname(data[i].path);
         downloadFile(data[i].download_url, pathname);
-        currentDownloadingFile = pathname.filename;
 
         fileStats.currentTotal++;
         progressBar.start(fileStats.currentTotal, fileStats.downloaded, {
@@ -367,6 +387,7 @@ function initializeDownload(paras) {
     // Download the whole repository as a zip file
     const repoURL = `https://github.com/${repoInfo.author}/${repoInfo.repository}/archive/${repoInfo.branch}.zip`;
     downloadFile(repoURL, { directory: outputDirectory, filename: `${repoInfo.repository}.zip` });
+    localRootDirectory = outputDirectory;
     currentDownloadingFile = `${repoInfo.repository}.zip`;
     fileStats.done = true;
     fileStats.currentTotal = 1;
@@ -379,9 +400,11 @@ function initializeDownload(paras) {
     }).then((response) => {
       if (response.data instanceof Array) {
         downloadDirectory();
+        fileStats.doesDownloadDirectory = true;
       } else {
         const partialPath = extractFilenameAndDirectoryFrom(decodeURI(repoInfo.resPath));
         downloadFile(response.data.download_url, { ...partialPath, directory: outputDirectory });
+        localRootDirectory = outputDirectory;
         currentDownloadingFile = partialPath.filename;
         fileStats.done = true;
         fileStats.currentTotal = 1;
@@ -394,14 +417,8 @@ function initializeDownload(paras) {
 
 // Enable to detect CTRL+C
 process.on('SIGINT', () => {
-  if (localRootDirectory !== '') {
-    shell.rm('-rf', localRootDirectory);
-  } else {
-    shell.rm('-f', localRootDirectory + currentDownloadingFile);
-  }
-  // Recover cursor
-  progressBar.stop();
-
+  if (localRootDirectory !== '') cleanUpOutputDirectory();
+  progressBar.stop(); // Recover cursor
   process.exit();
 });
 
