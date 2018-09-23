@@ -206,7 +206,9 @@ const basicOptions = {
 let repoInfo = {};
 
 function processClientError(error, retryCallback) {
-  console.log('\n');
+  // Due to the cli-process, all console output before `stop` will be cleared,
+  // to avoid that we put `stop` before the console output
+  progressBar.stop();
 
   // WARNING: never trust the returned data
   if (error.response === undefined) {
@@ -214,36 +216,32 @@ function processClientError(error, retryCallback) {
       No internet, try:\n
       - Checking the network cables, modem, and router
       - Reconnecting to Wi-Fi`);
-
-    progressBar.stop();
-    process.exit();
+    return;
   }
 
   if (error.response.status === 401) {
     // Unauthorized
-    console.error('Bad credentials, please check your username or password(or access token)!');
+    console.error('\nBad credentials, please check your username or password(or access token)!');
   } else if (error.response.status === 403) {
     if (authentication.auth) {
       // If the default API access rate without authentication exceeds and the command line
       // authentication is provided, then we switch to use authentication
-      console.warn('The unauthorized API access rate exceeded, we are now retrying with authentication......');
+      console.warn('\nThe unauthorized API access rate exceeded, we are now retrying with authentication......');
       authenticationSwitch = authentication;
       doesUseAuth = true;
       retryCallback();
     } else {
       // API rate limit exceeded
-      console.error('API rate limit exceeded, Authenticated requests get a higher rate limit.'
+      console.error('\nAPI rate limit exceeded, Authenticated requests get a higher rate limit.'
                   + ' Check out the documentation for more details. https://developer.github.com/v3/#rate-limiting');
     }
   } else {
-    let errMsg = error.message;
+    let errMsg = `\n${error.message}`;
     if (error.response.status === 404) {
       errMsg += ', please check the repo URL!';
     }
     console.error(errMsg);
   }
-
-  progressBar.stop();
 }
 
 function extractFilenameAndDirectoryFrom(path) {
@@ -410,7 +408,7 @@ process.on('SIGINT', () => {
 if (!doseJustPrintHelpInfo) {
   // Initailize progress bar
   console.log('');
-  progressBar.start(1, fileStats.downloaded, {
+  progressBar.start(fileStats.currentTotal, fileStats.downloaded, {
     status: 'downloading...',
     doesUseAuth,
   });
