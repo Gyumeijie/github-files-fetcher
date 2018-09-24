@@ -43,6 +43,8 @@ let configFile = tilde('~/.download_github');
 // `timeout` specifies the number of milliseconds to exit after the internet is detected disconnected.
 let timeout;
 let timer;
+// Root directory when clean up
+let rootDirectoryForCleanUp;
 
 function checkGithubRepoURLValidity(downloadUrl) {
   const { hostname, pathname } = url.parse(downloadUrl, true);
@@ -80,6 +82,23 @@ function printHelpInformation() {
 `);
 }
 
+// Find root directory for clean up when exit unexpectedly
+function findRootDirectoryForCleanUp(out) {
+  const segments = out.split(/\/+/);
+  let path = segments[0];
+  let rootDirectoryForCleanUp;
+
+  for (let i = 1; i < segments.length; i++) {
+    path = `${path}/${segments[i]}`;
+    if (!fs.existsSync(path)) {
+      rootDirectoryForCleanUp = path;
+      break;
+    }
+  }
+
+  return rootDirectoryForCleanUp;
+}
+
 const args = argsParser(process.argv);
 let doseJustPrintHelpInfo = args.help || (Object.keys(args).length === 0);
 try {
@@ -101,6 +120,7 @@ try {
       if (outputDirectory[args.out.length - 1] !== '/') {
         outputDirectory = `${outputDirectory}/`;
       }
+      rootDirectoryForCleanUp = findRootDirectoryForCleanUp(outputDirectory);
     }
 
     if (args.auth) {
@@ -228,6 +248,11 @@ const basicOptions = {
 let repoInfo = {};
 
 function cleanUpOutputDirectory() {
+  if (rootDirectoryForCleanUp !== undefined) {
+    shell.rm('-rf', rootDirectoryForCleanUp);
+    return;
+  }
+
   if (fileStats.doesDownloadDirectory) {
     shell.rm('-rf', localRootDirectory);
   } else {
