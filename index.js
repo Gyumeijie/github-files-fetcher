@@ -361,7 +361,6 @@ function downloadFile(url, pathname) {
         // Avoid falsy 100% progress, it is a sheer trick of presentation, not the logic
         if (fileStats.downloaded < fileStats.currentTotal) {
           progressBar.update(fileStats.downloaded, {
-            status: 'downloading...',
             doesUseAuth,
           });
         }
@@ -369,7 +368,6 @@ function downloadFile(url, pathname) {
         if (fileStats.downloaded === fileStats.currentTotal && fileStats.done) {
           progressBar.update(fileStats.downloaded, {
             status: 'downloaded',
-            doesUseAuth,
           });
           progressBar.stop();
           process.exit();
@@ -395,10 +393,7 @@ function iterateDirectory(dirPaths) {
         downloadFile(data[i].download_url, pathname);
 
         fileStats.currentTotal++;
-        progressBar.start(fileStats.currentTotal, fileStats.downloaded, {
-          status: 'downloading...',
-          doesUseAuth,
-        });
+        progressBar.setTotal(fileStats.currentTotal);
       } else {
         console.log(data[i]);
       }
@@ -435,6 +430,7 @@ function initializeDownload(paras) {
     currentDownloadingFile = `${repoInfo.repository}.zip`;
     fileStats.done = true;
     fileStats.currentTotal = 1;
+    progressBar.setTotal(fileStats.currentTotal);
   } else {
     // Download part(s) of repository
     axios({
@@ -452,6 +448,7 @@ function initializeDownload(paras) {
         currentDownloadingFile = partialPath.filename;
         fileStats.done = true;
         fileStats.currentTotal = 1;
+        progressBar.setTotal(fileStats.currentTotal);
       }
     }).catch((error) => {
       processClientError(error, initializeDownload.bind(null, paras));
