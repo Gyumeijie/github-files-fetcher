@@ -6,6 +6,7 @@ const url = require('url');
 const axios = require('axios');
 const shell = require('shelljs');
 const argsParser = require('args-parser');
+const isOnline = require('is-online');
 const progress = require('./lib/progress');
 
 const AUTHOR = 1;
@@ -39,6 +40,9 @@ let authenticationSwitch = {};
 let doesUseAuth = false;
 // Defalut configuration file
 let configFile = tilde('~/.download_github');
+// `timeout` specifies the number of milliseconds to exit after the internet is detected disconnected.
+let timeout;
+let timer;
 
 function checkGithubRepoURLValidity(downloadUrl) {
   const { hostname, pathname } = url.parse(downloadUrl, true);
@@ -69,7 +73,10 @@ function printHelpInformation() {
                                 access rate
   
   Configuration file:
-  --file=config_file            the default configuration file is the '~/download_github'
+  --file=config_file            the default configuration file is the '~/.download_github'
+
+  Timeout: 
+  --timeout=number(ms)          timeout specifies the number of milliseconds to exit after the internet is detected disconnected
 `);
 }
 
@@ -116,6 +123,12 @@ try {
       }
     }
 
+    if (args.timeout !== undefined) {
+      timeout = parseInt(args.timeout, 10);
+      // [eslint] Unexpected use of 'isNaN'. (no-restricted-globals)
+      timeout = Number.isNaN(timeout) ? undefined : timeout;
+    }
+
     if (args.file) {
       configFile = tilde(args.file);
     }
@@ -127,28 +140,36 @@ try {
   doseJustPrintHelpInfo = true;
 }
 
-
 const parameters = {
   url: args.url,
   fileName: undefined,
   rootDirectory: undefined,
 };
 
-// If no command line authentication provided, read the configuration file
-if (!authentication.auth) {
-  (function parseConfig() {
-    const isExistent = fs.existsSync(configFile);
-    if (isExistent) {
-      const data = fs.readFileSync(configFile, 'utf8');
-      const config = JSON.parse(data);
-      authentication.auth = config.auth;
+// If there no `auth`, `alwaysUseAuth`, `timeout` provided in the commandline, then we need
+// to read the configuration file
+function doesNeedReadConfiguration() {
+  if (!args.auth || !args.alwaysUseAuth || !args.timeout) return true;
+  return false;
+}
 
-      if (args.alwaysUseAuth || config.alwaysUseAuth) {
-        authenticationSwitch = authentication;
-        doesUseAuth = true;
-      }
-    }
-  }());
+// Read the configuration file if exists
+// WARNING: options provided in commandline prioritize those in configuration file
+if (fs.existsSync(configFile) && doesNeedReadConfiguration()) {
+  const data = fs.readFileSync(configFile, 'utf8');
+  const config = JSON.parse(data);
+
+  if (!args.auth && config.auth) authentication.auth = config.auth;
+
+  if (!args.alwaysUseAuth && config.alwaysUseAuth) {
+    authenticationSwitch = authentication;
+    doesUseAuth = true;
+  }
+
+  if (!args.timeout && config.timeout) {
+    timeout = parseInt(config.timeout, 10);
+    timeout = Number.isNaN(timeout) ? undefined : timeout;
+  }
 }
 
 function preprocessURL(repoURL) {
@@ -202,9 +223,6 @@ function parseInfo(repoInfo) {
 const basicOptions = {
   method: 'get',
   responseType: 'arrayBuffer',
-  // `timeout` specifies the number of milliseconds before the request times out.
-  // If the request takes longer than `timeout`, the request will be aborted.
-  timeout: 6000,
 };
 // Global variable
 let repoInfo = {};
@@ -329,6 +347,7 @@ function downloadFile(url, pathname) {
             doesUseAuth,
           });
           progressBar.stop();
+          process.exit();
         }
       });
   }).catch((error) => {
@@ -421,6 +440,20 @@ process.on('SIGINT', () => {
   progressBar.stop(); // Recover cursor
   process.exit();
 });
+
+// Enable to detect internet connectivity
+function detectInternetConnectivity() {
+  isOnline().then((online) => {
+    if (!online && timeout !== undefined) {
+      setTimeout(() => {
+        clearInterval(timer);
+        // Construct a falsy error object to indicate the disconnectivity
+        processClientError({ response: undefined }, null);
+      }, timeout);
+    }
+  });
+}
+timer = setInterval(detectInternetConnectivity, 2000);
 
 if (!doseJustPrintHelpInfo) {
   // Initailize progress bar

@@ -47,7 +47,8 @@ The following is the **template** of the configuration file:
         "username" : "your_github_name",
         "password" : "password_or_api_access_token"
    },
-   "alwaysUseAuth" : true
+   "alwaysUseAuth" : true,
+   "timeout" : 5000 
 }
 ```
 
