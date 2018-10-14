@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 const fs = require('fs');
 const os = require('os');
 const url = require('url');
@@ -7,7 +5,7 @@ const axios = require('axios');
 const shell = require('shelljs');
 const argsParser = require('args-parser');
 const isOnline = require('is-online');
-const progress = require('./lib/progress');
+const progress = require('./progress');
 
 const AUTHOR = 1;
 const REPOSITORY = 2;

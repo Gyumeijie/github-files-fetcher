@@ -56,6 +56,9 @@ When the default unauthorized API access rate exceeded, the `github-files-fetche
 
 Since the `github-files-fetcher` request resource without authentication in default for performance consideration, and switch to use authentication if necessary, this causes unnecessary cost once the default unauthorized API access rate exceeded. To avoid this problem you can have the `github-files-fetcher` always use authentication by specify `--alwaysUseAuth` option.
 
+# Environment
+`node >= 6`
+
 # Other resources
 There are some other good tools that can do the same thing for you:
 - GitZip (Credits to Kino, Browser Extensions)

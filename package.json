@@ -1,6 +1,6 @@
 {
   "name": "github-files-fetcher",
-  "version": "1.2.0",
+  "version": "1.5.0",
   "description": "download files from github repository",
   "keywords": [
     "github",
@@ -14,7 +14,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "version": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0 && git add CHANGELOG.md"
+    "version": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0 && git add CHANGELOG.md",
+    "build": "webpack",
+    "publish": "./publish.sh"
   },
   "bin": {
     "fetcher": "index.js",
@@ -31,6 +33,7 @@
   },
   "homepage": "https://github.com/Gyumeijie/github-files-fetcher",
   "dependencies": {
+    "@babel/polyfill": "^7.0.0",
     "@gyumeijie/cli-progress": "^1.0.0",
     "args-parser": "^1.1.0",
     "axios": "^0.18.0",
@@ -39,12 +42,19 @@
     "shelljs": "^0.8.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.1.2",
+    "@babel/preset-env": "^7.1.0",
+    "babel-loader": "^8.0.4",
+    "copy-webpack-plugin": "^4.5.3",
     "cz-conventional-changelog": "^2.1.0",
     "eslint": "^5.5.0",
     "eslint-config-airbnb": "^17.1.0",
     "eslint-plugin-import": "^2.14.0",
     "eslint-plugin-jsx-a11y": "^6.1.1",
-    "eslint-plugin-react": "^7.11.1"
+    "eslint-plugin-react": "^7.11.1",
+    "webpack": "^4.20.2",
+    "webpack-cli": "^3.1.2",
+    "write-to-file-webpack": "^1.0.4"
   },
   "config": {
     "commitizen": {
