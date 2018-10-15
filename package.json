@@ -23,7 +23,7 @@
     "github-files-fetcher": "index.js"
   },
   "author": "Gyumeijie",
-  "license": "ISC",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/Gyumeijie/github-files-fetcher.git"
