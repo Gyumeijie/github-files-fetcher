@@ -354,6 +354,10 @@ function downloadFile(url, pathname) {
 
     const localPathname = pathname.directory + pathname.filename;
     response.data.pipe(fs.createWriteStream(localPathname))
+      .on('error', error => processClientError({
+        response: { },
+        message: error,
+      }, null))
       .on('close', () => {
         fileStats.downloaded++;
         // Avoid falsy 100% progress, it is a sheer trick of presentation, not the logic
