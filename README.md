@@ -2,6 +2,8 @@
 
 The `github-files-fetcher` is mainly designed for downloading part file(s) from a github repository. This is very useful if you  have a low bandwidth network and/or just need particular file(s) or subdirectory from a large repository. While you want to download the whole repository, the `git clone` command is preferred.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
 # Installation 
 
 Run `npm install -g github-files-fetcher`
