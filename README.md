@@ -13,11 +13,11 @@ Run `npm install -g github-files-fetcher`
 ```bash
 fetcher --url=resource_url  --out=output_directory
 ```
-for example
+For example:
 ```bash
-fetcher --url="https://github.com/reduxjs/redux/tree/master/examples/async" --out="~/"
+fetcher --url="https://github.com/Gyumeijie/github-files-fetcher/blob/master/CHANGELOG.md" --out=/tmp
 ```
-
+![](https://github.com/Gyumeijie/assets/blob/master/github-files-fetcher/fetcher-result.png)
 ## Authentication
 
 The default unauthorized API access rate is **60** times per hour, and usually this is enough. When the access rate exceeded,
