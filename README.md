@@ -1,8 +1,8 @@
-# Why?
+# Introduction [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 The `github-files-fetcher` is mainly designed for downloading part file(s) from a github repository. This is very useful if you  have a low bandwidth network and/or just need particular file(s) or subdirectory from a large repository. While you want to download the whole repository, the `git clone` command is preferred.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
 
 # Installation 
 
@@ -61,7 +61,7 @@ Since the `github-files-fetcher` request resource without authentication in defa
 # Environment
 `node >= 6`
 
-# Other resources
+# Related works
 There are some other good tools that can do the same thing for you:
 - GitZip (Credits to Kino, Browser Extensions)
     - [Firefox Addon](https://addons.mozilla.org/en-US/firefox/addon/gitzip/)
