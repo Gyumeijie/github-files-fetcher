@@ -20,10 +20,12 @@ module.exports = {
     'electron',
   ],
   plugins: [
-    new CopyWebpackPlugin([
-      { from: 'CHANGELOG.md', to: path.resolve(__dirname, 'dist', 'CHANGELOG.md') },
-      { from: 'README.md', to: path.resolve(__dirname, 'dist', 'README.md') },
-    ]),
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: 'CHANGELOG.md', to: path.resolve(__dirname, 'dist', 'CHANGELOG.md') },
+        { from: 'README.md', to: path.resolve(__dirname, 'dist', 'README.md') },
+      ]
+    }),
     new WriteToFilePlugin({
       filename: path.resolve(__dirname, 'dist/package.json'),
       data() {
