@@ -480,7 +480,7 @@ function detectInternetConnectivity() {
 timer = setInterval(detectInternetConnectivity, 2000);
 
 if (!doseJustPrintHelpInfo) {
-  // Initailize progress bar
+  // Initialize progress bar
   console.log('');
   progressBar.start(fileStats.currentTotal, fileStats.downloaded, {
     status: 'downloading...',
@@ -488,4 +488,6 @@ if (!doseJustPrintHelpInfo) {
   });
 
   initializeDownload(parameters);
+} else {
+  clearInterval(timer);
 }
